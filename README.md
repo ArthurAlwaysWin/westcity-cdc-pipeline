@@ -1,6 +1,6 @@
 # West City Bank – Event-Driven Account Opening Integration
 
-Prototype for **UTS 32113 Advanced Database, Assignment 2** (group Wrk1-01).
+Prototype for **UTS 32113 Advanced Database, Assignment 2** (group 5 Wrk1-01).
 
 A customer opens a new transaction account in West City Bank's mobile app.
 The account-opening event must reach the **fraud engine**, **CRM**,
@@ -14,6 +14,7 @@ silver Data Vault → gold star schema) feeds three live dashboards.
 ---
 
 ## Contents
+
 1. [Objectives](#1-objectives)
 2. [Quick start](#2-quick-start)
 3. [System architecture](#3-system-architecture)
@@ -33,14 +34,14 @@ silver Data Vault → gold star schema) feeds three live dashboards.
 to know hears about it within seconds, each adds what only it knows, and the
 bank sees the combined result in one place.
 
-| Use case (Assignment 1) | What the prototype shows | Where to see it |
-|---|---|---|
-| **UC1** Event propagation | One database commit in core banking reaches 4 independent consumers through the outbox, Debezium and Kafka, typically in under a second | Consumer logs; `demo/03_trace_account.sql`; dashboard D1 |
-| **UC2** Timely fraud / AML data | Every new account is scored (device sharing, KYC, watchlist) about 0.5 s after it opens | Dashboard D2 |
-| **UC3** Consistent multi-system state | Idempotent consumers and versioned upserts; the four cross-system consistency checks stay at 0 | Dashboard D3 |
-| **UC4** Fault-tolerant decoupling | Stop one consumer: the others keep working, Kafka keeps its events, and it catches up on restart with nothing lost or applied twice | Demo scene 6 |
-| **UC5** Audit and lineage | Event ids, transaction ids, Kafka topic / partition / offset, `run_id` on every warehouse row, insert-only history, data-quality quarantine | `bronze.core_event`, `ops.etl_run`, `silver.sat_*` |
-| **UC6** Streaming vs batch latency | The trace shows each system receiving events within seconds (streaming), while the warehouse is loaded in batches | `demo/03_trace_account.sql` |
+| Use case (Assignment 1)               | What the prototype shows                                                                                                                    | Where to see it                                          |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| **UC1** Event propagation             | One database commit in core banking reaches 4 independent consumers through the outbox, Debezium and Kafka, typically in under a second     | Consumer logs; `demo/03_trace_account.sql`; dashboard D1 |
+| **UC2** Timely fraud / AML data       | Every new account is scored (device sharing, KYC, watchlist) about 0.5 s after it opens                                                     | Dashboard D2                                             |
+| **UC3** Consistent multi-system state | Idempotent consumers and versioned upserts; the four cross-system consistency checks stay at 0                                              | Dashboard D3                                             |
+| **UC4** Fault-tolerant decoupling     | Stop one consumer: the others keep working, Kafka keeps its events, and it catches up on restart with nothing lost or applied twice         | Demo scene 6                                             |
+| **UC5** Audit and lineage             | Event ids, transaction ids, Kafka topic / partition / offset, `run_id` on every warehouse row, insert-only history, data-quality quarantine | `bronze.core_event`, `ops.etl_run`, `silver.sat_*`       |
+| **UC6** Streaming vs batch latency    | The trace shows each system receiving events within seconds (streaming), while the warehouse is loaded in batches                           | `demo/03_trace_account.sql`                              |
 
 **Assignment deliverables covered:** 4 source databases, 1 integrated
 warehouse, fully commented SQL (create, extract, transform, load) with
@@ -75,19 +76,20 @@ open http://localhost:8050
 ```
 
 **Start again from zero** (Postgres and Kafka must be reset together):
+
 ```bash
 docker compose down
 docker volume rm westcity_pgdata westcity_kafkadata
 docker compose up -d --build
 ```
 
-| Tool | Address | Login (lab only) |
-|---|---|---|
-| Live dashboards | http://localhost:8050 | – |
-| CloudBeaver (web SQL editor) | http://localhost:8978 | connection: host `postgres`, port `5432` |
-| PostgreSQL from your machine | `localhost:5433` | `westcity_admin` / `lab_admin` |
-| Kafka from your machine | `localhost:9092` | – |
-| Kafka Connect REST API | http://localhost:8083/connectors | – |
+| Tool                         | Address                          | Login (lab only)                         |
+| ---------------------------- | -------------------------------- | ---------------------------------------- |
+| Live dashboards              | http://localhost:8050            | –                                        |
+| CloudBeaver (web SQL editor) | http://localhost:8978            | connection: host `postgres`, port `5432` |
+| PostgreSQL from your machine | `localhost:5433`                 | `westcity_admin` / `lab_admin`           |
+| Kafka from your machine      | `localhost:9092`                 | –                                        |
+| Kafka Connect REST API       | http://localhost:8083/connectors | –                                        |
 
 ---
 
@@ -139,16 +141,16 @@ flowchart LR
 All five databases (core_banking, identity_fraud, crm, loyalty, westcity_dw)
 live in **one PostgreSQL 15 container**, a lab simplification.
 
-| Compose service | Image | Role |
-|---|---|---|
-| `postgres` | postgres:15.18 | All five databases; runs `sql/01`–`09` on first start |
-| `kafka` | apache/kafka:4.3.1 | Event transport (KRaft mode, no ZooKeeper) |
-| `connect` | quay.io/debezium/connect:3.6.3.Final | Debezium: reads `core_banking.outbox` from the write-ahead log |
-| `connect-init` | curlimages/curl | Registers `connectors/core-outbox.json` once, then exits |
-| `consumer-fraud` / `-crm` / `-loyalty` / `-dw` | `python/Dockerfile` | One Python script (`consumers/consumer.py`), four instances |
-| `dashboard` | `python/Dockerfile` | Live web dashboards (Plotly Dash) on port 8050 |
-| `python` | `python/Dockerfile` | Course-lab style shell for running scripts (e.g. the HTML export) |
-| `cloudbeaver` | dbeaver/cloudbeaver | Web SQL editor |
+| Compose service                                | Image                                | Role                                                              |
+| ---------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------- |
+| `postgres`                                     | postgres:15.18                       | All five databases; runs `sql/01`–`09` on first start             |
+| `kafka`                                        | apache/kafka:4.3.1                   | Event transport (KRaft mode, no ZooKeeper)                        |
+| `connect`                                      | quay.io/debezium/connect:3.6.3.Final | Debezium: reads `core_banking.outbox` from the write-ahead log    |
+| `connect-init`                                 | curlimages/curl                      | Registers `connectors/core-outbox.json` once, then exits          |
+| `consumer-fraud` / `-crm` / `-loyalty` / `-dw` | `python/Dockerfile`                  | One Python script (`consumers/consumer.py`), four instances       |
+| `dashboard`                                    | `python/Dockerfile`                  | Live web dashboards (Plotly Dash) on port 8050                    |
+| `python`                                       | `python/Dockerfile`                  | Course-lab style shell for running scripts (e.g. the HTML export) |
+| `cloudbeaver`                                  | dbeaver/cloudbeaver                  | Web SQL editor                                                    |
 
 ---
 
@@ -306,12 +308,12 @@ erDiagram
     }
 ```
 
-| Change | Trigger (`sql/03_outbox_triggers.sql`) | Event |
-|---|---|---|
-| New customer | deferred to COMMIT, so the address is included | `CustomerCreated` |
-| Customer details change | after update | `CustomerDetailsUpdated` |
-| New account | deferred to COMMIT, so the holders are included | `AccountOpened` |
-| Status becomes ACTIVE / REJECTED | after update of `account_status` | `AccountActivated` / `AccountRejected` |
+| Change                           | Trigger (`sql/03_outbox_triggers.sql`)          | Event                                  |
+| -------------------------------- | ----------------------------------------------- | -------------------------------------- |
+| New customer                     | deferred to COMMIT, so the address is included  | `CustomerCreated`                      |
+| Customer details change          | after update                                    | `CustomerDetailsUpdated`               |
+| New account                      | deferred to COMMIT, so the holders are included | `AccountOpened`                        |
+| Status becomes ACTIVE / REJECTED | after update of `account_status`                | `AccountActivated` / `AccountRejected` |
 
 Every business change also adds 1 to the aggregate's `version`. Each account
 event carries a full snapshot of the account and of every holder's customer
@@ -324,13 +326,13 @@ between the two topics.
   internal tables are never exposed.
 - The **EventRouter** turns each outbox row into a clean business event:
 
-| Kafka | Value |
-|---|---|
-| Topic | `bank.<aggregatetype>.events`: `bank.account.events`, `bank.customer.events` |
-| Key | `aggregateid` (account id or customer id), so events are ordered per account |
-| Value | the JSON payload (below) |
-| Headers | `id`, `type`, `event_version`, `tx_id` |
-| Partitions | 3 per topic (replication factor 1: single broker) |
+| Kafka      | Value                                                                        |
+| ---------- | ---------------------------------------------------------------------------- |
+| Topic      | `bank.<aggregatetype>.events`: `bank.account.events`, `bank.customer.events` |
+| Key        | `aggregateid` (account id or customer id), so events are ordered per account |
+| Value      | the JSON payload (below)                                                     |
+| Headers    | `id`, `type`, `event_version`, `tx_id`                                       |
+| Partitions | 3 per topic (replication factor 1: single broker)                            |
 
 ```json
 {
@@ -343,28 +345,44 @@ between the two topics.
   "occurred_at": "2026-09-30T21:45:21.635+10:00",
   "producer": "core_banking",
   "data": {
-    "account_id": 2001, "version": 1, "product_code": "EVERYDAY", "channel": "MOBILE",
-    "account_status": "PENDING", "opened_at": "…", "onboarding_session_id": "…",
-    "holders": [{ "customer_id": 2001, "holder_role": "PRIMARY",
-                  "customer": { "first_name": "Mia", "date_of_birth": "…",
-                                "marketing_consent": true, "version": 1, "…": "…" } }]
+    "account_id": 2001,
+    "version": 1,
+    "product_code": "EVERYDAY",
+    "channel": "MOBILE",
+    "account_status": "PENDING",
+    "opened_at": "…",
+    "onboarding_session_id": "…",
+    "holders": [
+      {
+        "customer_id": 2001,
+        "holder_role": "PRIMARY",
+        "customer": {
+          "first_name": "Mia",
+          "date_of_birth": "…",
+          "marketing_consent": true,
+          "version": 1,
+          "…": "…"
+        }
+      }
+    ]
   }
 }
 ```
-*Debezium leaves out fields that are NULL (e.g. `activated_at` of a PENDING
-account), so consumers read optional fields with `.get()`.*
+
+_Debezium leaves out fields that are NULL (e.g. `activated_at` of a PENDING
+account), so consumers read optional fields with `.get()`._
 
 ### 5.3 Consumers (`consumers/consumer.py`)
 
 One script, four Compose services. All business rules are in SQL functions;
 Python only moves data.
 
-| Service | Consumer group | Reads | Acts on | Calls | Writes to |
-|---|---|---|---|---|---|
-| `consumer-fraud` | `fraud-consumer` | account topic | AccountOpened | `fraud_assess_account()` | identity_fraud |
-| `consumer-crm` | `crm-consumer` | account topic | Opened, Activated, Rejected | `crm_onboard_account()` | crm |
-| `consumer-loyalty` | `loyalty-consumer` | account topic | Activated, Rejected | `loyalty_onboard_account()` | loyalty |
-| `consumer-dw` | `dw-consumer` | both topics | every event | `bronze.land_core_event()` | westcity_dw |
+| Service            | Consumer group     | Reads         | Acts on                     | Calls                       | Writes to      |
+| ------------------ | ------------------ | ------------- | --------------------------- | --------------------------- | -------------- |
+| `consumer-fraud`   | `fraud-consumer`   | account topic | AccountOpened               | `fraud_assess_account()`    | identity_fraud |
+| `consumer-crm`     | `crm-consumer`     | account topic | Opened, Activated, Rejected | `crm_onboard_account()`     | crm            |
+| `consumer-loyalty` | `loyalty-consumer` | account topic | Activated, Rejected         | `loyalty_onboard_account()` | loyalty        |
+| `consumer-dw`      | `dw-consumer`      | both topics   | every event                 | `bronze.land_core_event()`  | westcity_dw    |
 
 ### 5.4 Identity & Fraud (`identity_fraud`)
 
@@ -400,41 +418,41 @@ DECLINE sets REJECTED. The status change fires the triggers, so
 
 Its rules are in `sql/04_crm_onboarding.sql`.
 
-| Field | Rule |
-|---|---|
-| Segment | Age at opening: STUDENT < 23, YOUNG_PROFESSIONAL 23–35, FAMILY 36–55, SENIOR > 55 |
-| Lifecycle stage | REJECTED → DECLINED; ACTIVE and opened < 30 days ago → NEW_ONBOARDING; ACTIVE older → ESTABLISHED; PENDING → UNDER_REVIEW |
-| Welcome-call task | Only for ACTIVE accounts, opened 0–24 h after activation; COMPLETED (85%) if older than 7 days, else OPEN |
+| Field             | Rule                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Segment           | Age at opening: STUDENT < 23, YOUNG_PROFESSIONAL 23–35, FAMILY 36–55, SENIOR > 55                                         |
+| Lifecycle stage   | REJECTED → DECLINED; ACTIVE and opened < 30 days ago → NEW_ONBOARDING; ACTIVE older → ESTABLISHED; PENDING → UNDER_REVIEW |
+| Welcome-call task | Only for ACTIVE accounts, opened 0–24 h after activation; COMPLETED (85%) if older than 7 days, else OPEN                 |
 
 ### 5.7 Loyalty (`loyalty`)
 
 Its rules are in `sql/06_loyalty_onboarding.sql`.
 
-| Field | Rule |
-|---|---|
-| Eligibility | Enrol only if the account is ACTIVE **and** the customer gave marketing consent |
-| Tier | BRONZE for every new member |
-| Welcome offer | EVERYDAY 5,000 points; SAVINGS 3,000; any other product 1,000 |
-| Redemption | REDEEMED (60%) if assigned more than 14 days ago, else ASSIGNED |
-| Rejection | Never enrolled; an enrolled account that is rejected becomes UNENROLLED |
+| Field         | Rule                                                                            |
+| ------------- | ------------------------------------------------------------------------------- |
+| Eligibility   | Enrol only if the account is ACTIVE **and** the customer gave marketing consent |
+| Tier          | BRONZE for every new member                                                     |
+| Welcome offer | EVERYDAY 5,000 points; SAVINGS 3,000; any other product 1,000                   |
+| Redemption    | REDEEMED (60%) if assigned more than 14 days ago, else ASSIGNED                 |
+| Rejection     | Never enrolled; an enrolled account that is rejected becomes UNENROLLED         |
 
 ### 5.8 Data warehouse (`westcity_dw`)
 
-| Layer | Contents | Loaded by |
-|---|---|---|
+| Layer      | Contents                                                                                                                                | Loaded by                                          |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
 | **bronze** | Raw data as it arrived: `core_event` (every core event, with Kafka topic / partition / offset) and one table per extracted source table | consumer-dw (live) and `etl/01_extract_bronze.sql` |
-| **silver** | Data Vault 2.0: hubs (business keys), links (relationships), satellites (attributes with full, insert-only history) | `etl/02_load_silver.sql` |
-| **gold** | Star schema, plus every dashboard query as a view (`sql/09_reports_dashboards.sql`) | `etl/03_load_gold.sql` |
-| **ops** | `etl_run` (one row per run, its `run_id` stamped on every row it writes), `dq_quarantine`, `extract_watermark` | all ETL scripts |
+| **silver** | Data Vault 2.0: hubs (business keys), links (relationships), satellites (attributes with full, insert-only history)                     | `etl/02_load_silver.sql`                           |
+| **gold**   | Star schema, plus every dashboard query as a view (`sql/09_reports_dashboards.sql`)                                                     | `etl/03_load_gold.sql`                             |
+| **ops**    | `etl_run` (one row per run, its `run_id` stamped on every row it writes), `dq_quarantine`, `extract_watermark`                          | all ETL scripts                                    |
 
 **Incremental extract.** `ops.extract_watermark` remembers how far each
 table has been read.
 
-| Tables | How new or changed rows are found |
-|---|---|
-| device, kyc_verification, watchlist_screening, risk_assessment, crm_case | Id above the watermark (insert-only tables) |
-| crm_contact, crm_financial_account, loyalty_member, member_offer | `synced_at` after the watermark (rows are updated) |
-| product, loyalty_offer, onboarding_session | Copied in full (small, or no usable watermark) |
+| Tables                                                                   | How new or changed rows are found                  |
+| ------------------------------------------------------------------------ | -------------------------------------------------- |
+| device, kyc_verification, watchlist_screening, risk_assessment, crm_case | Id above the watermark (insert-only tables)        |
+| crm_contact, crm_financial_account, loyalty_member, member_offer         | `synced_at` after the watermark (rows are updated) |
+| product, loyalty_offer, onboarding_session                               | Copied in full (small, or no usable watermark)     |
 
 **Silver: Data Vault 2.0.** Hash keys are MD5 of the business key. A
 satellite row is added only when its `hash_diff` changes.
@@ -503,6 +521,7 @@ erDiagram
 ## 6. Dashboards
 
 **Live web app:** http://localhost:8050 (`dashboards/app.py`, Plotly Dash).
+
 - **Tabs:** one per dashboard.
 - **Live:** the page re-reads the gold views every 5 seconds, so a warehouse
   load appears without reloading.
@@ -516,44 +535,47 @@ erDiagram
 `sql/09_reports_dashboards.sql`. Python only runs `SELECT * FROM gold.<view>`
 and draws the result.
 
-*The screenshots below come from a test run with about 2,000 seeded accounts.*
+_The screenshots below come from a test run with about 2,000 seeded accounts._
 
 ### D1 Account Opening Growth (business, UC1)
+
 Is account opening growing, through which products and channels, and who is opening?
 
-| View | Chart |
-|---|---|
-| `vw_d1_kpi_today` | KPIs: opened, approved and declined today; openings this month |
-| `vw_d1_daily_openings` | Line: openings and approvals per day, last 90 days |
-| `vw_d1_openings_by_product_channel` | Grouped bar |
-| `vw_d1_openings_by_segment` | Bar, with % of all openings |
-| `vw_d1_openings_by_state` | Bar |
-| `vw_d1_latest_openings` | Table: the 15 newest openings and what each system decided |
+| View                                | Chart                                                          |
+| ----------------------------------- | -------------------------------------------------------------- |
+| `vw_d1_kpi_today`                   | KPIs: opened, approved and declined today; openings this month |
+| `vw_d1_daily_openings`              | Line: openings and approvals per day, last 90 days             |
+| `vw_d1_openings_by_product_channel` | Grouped bar                                                    |
+| `vw_d1_openings_by_segment`         | Bar, with % of all openings                                    |
+| `vw_d1_openings_by_state`           | Bar                                                            |
+| `vw_d1_latest_openings`             | Table: the 15 newest openings and what each system decided     |
 
 (Screenshot at the top of this page.)
 
 ### D2 Onboarding Risk & Compliance (UC2)
+
 How risky are new customers, what triggers the risk, and how fast do we decide?
 
-| View | Chart |
-|---|---|
-| `vw_d2_decision_mix` | Stacked bar: APPROVE / REVIEW / DECLINE by channel |
-| `vw_d2_risk_band_weekly` | Stacked bar: risk bands per week |
+| View                        | Chart                                                    |
+| --------------------------- | -------------------------------------------------------- |
+| `vw_d2_decision_mix`        | Stacked bar: APPROVE / REVIEW / DECLINE by channel       |
+| `vw_d2_risk_band_weekly`    | Stacked bar: risk bands per week                         |
 | `vw_d2_shared_device_rings` | Bar: devices used by 3+ customers (possible fraud rings) |
-| `vw_d2_time_to_decision` | Line: average minutes to decision, % within 5 minutes |
-| `vw_d2_top_reason_codes` | Bar: the most common risk reasons |
+| `vw_d2_time_to_decision`    | Line: average minutes to decision, % within 5 minutes    |
+| `vw_d2_top_reason_codes`    | Bar: the most common risk reasons                        |
 
 ![D2 Onboarding Risk & Compliance](docs/images/dashboard_d2.png)
 
 ### D3 Customer Engagement & Consistency (UC3)
+
 Are approved customers being engaged, and do all systems agree?
 
-| View | Chart |
-|---|---|
-| `vw_d3_loyalty_enrolment_by_segment` | Grouped bar: approved vs enrolled (about 70% consent) |
-| `vw_d3_welcome_offers_monthly` | Bars: points committed per month; line: % redeemed |
-| `vw_d3_welcome_call_coverage` | Lines: approved accounts, welcome tasks, % completed |
-| `vw_d3_consistency_checks` | Table: declined but enrolled · declined but ACTIVE in CRM · approved but missing in CRM · approved + consented but not enrolled: **all 0** |
+| View                                 | Chart                                                                                                                                      |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `vw_d3_loyalty_enrolment_by_segment` | Grouped bar: approved vs enrolled (about 70% consent)                                                                                      |
+| `vw_d3_welcome_offers_monthly`       | Bars: points committed per month; line: % redeemed                                                                                         |
+| `vw_d3_welcome_call_coverage`        | Lines: approved accounts, welcome tasks, % completed                                                                                       |
+| `vw_d3_consistency_checks`           | Table: declined but enrolled · declined but ACTIVE in CRM · approved but missing in CRM · approved + consented but not enrolled: **all 0** |
 
 ![D3 Customer Engagement & Consistency](docs/images/dashboard_d3.png)
 
@@ -564,15 +586,15 @@ Are approved customers being engaged, and do all systems agree?
 The full script, with commands, what to show and what to say, is in
 **[demo/DEMO_SCRIPT.md](demo/DEMO_SCRIPT.md)**.
 
-| Scene | What happens |
-|---|---|
-| 0 | Show the live dashboard: *accounts opened today = 0* |
-| 1 | `demo/01_open_account_mia.sql`: Mia opens an EVERYDAY account; the consumer log shows all 4 systems reacting within a second |
-| 2 | `demo/apply_decisions.sql`, then `demo/03_trace_account.sql`: follow Mia through core, Kafka, fraud (APPROVE), CRM (NEW_ONBOARDING + welcome call), loyalty (BRONZE, 5,000 points) |
-| 3 | `etl/run_all.sql`: the warehouse load; the trace now shows her silver history and gold row |
-| 4 | The dashboard updates by itself: opened today = 1, Mia at the top of the latest openings |
-| 5 | `demo/02_open_account_alex_fraud.sql`: Alex, on a fraud-ring device with a failed KYC, is declined everywhere; D2 shows the ring grow; D3 checks stay 0 |
-| 6 | Optional: stop `consumer-loyalty`, open an account, restart it: loyalty catches up and nothing is lost |
+| Scene | What happens                                                                                                                                                                       |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | Show the live dashboard: _accounts opened today = 0_                                                                                                                               |
+| 1     | `demo/01_open_account_mia.sql`: Mia opens an EVERYDAY account; the consumer log shows all 4 systems reacting within a second                                                       |
+| 2     | `demo/apply_decisions.sql`, then `demo/03_trace_account.sql`: follow Mia through core, Kafka, fraud (APPROVE), CRM (NEW_ONBOARDING + welcome call), loyalty (BRONZE, 5,000 points) |
+| 3     | `etl/run_all.sql`: the warehouse load; the trace now shows her silver history and gold row                                                                                         |
+| 4     | The dashboard updates by itself: opened today = 1, Mia at the top of the latest openings                                                                                           |
+| 5     | `demo/02_open_account_alex_fraud.sql`: Alex, on a fraud-ring device with a failed KYC, is declined everywhere; D2 shows the ring grow; D3 checks stay 0                            |
+| 6     | Optional: stop `consumer-loyalty`, open an account, restart it: loyalty catches up and nothing is lost                                                                             |
 
 ---
 
@@ -627,6 +649,7 @@ The full script, with commands, what to show and what to say, is in
 ## 9. Design decisions and lab simplifications
 
 **Design decisions**
+
 - **Transactional outbox + CDC** instead of the app calling each system:
   the customer never waits for fraud, CRM or loyalty, and no event is lost
   if one of them is down.
@@ -645,6 +668,7 @@ The full script, with commands, what to show and what to say, is in
   Assignment 1 places West City in Western Australia.
 
 **Lab simplifications** (production would differ)
+
 - One PostgreSQL container for all five databases, linked with postgres_fdw;
   production would use separate servers.
 - One superuser for every component; production would give each service
@@ -691,10 +715,10 @@ docker compose exec postgres psql -U westcity_admin -d westcity_dw \
   -c "SELECT run_id, job_name, status, rows_loaded, rows_rejected FROM ops.etl_run ORDER BY run_id DESC LIMIT 6"
 ```
 
-| Problem | Fix |
-|---|---|
-| The dashboard does not change after new accounts | It reads the warehouse: run `etl/run_all.sql`; the page updates within 5 s |
-| `apply_decisions.sql` returns 0 rows | The fraud consumer has not scored the accounts yet; wait a moment and run it again |
-| Charts are almost empty | Set `\set seed_count 2000` in `seed/seed_history.sql`, then rebuild and seed again |
-| A change in `sql/` has no effect | The `sql/` scripts only run on an empty database: rebuild from zero (section 2) |
-| The connector is not RUNNING | `docker compose logs connect`; after a partial reset, rebuild Postgres and Kafka **together** |
+| Problem                                          | Fix                                                                                           |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| The dashboard does not change after new accounts | It reads the warehouse: run `etl/run_all.sql`; the page updates within 5 s                    |
+| `apply_decisions.sql` returns 0 rows             | The fraud consumer has not scored the accounts yet; wait a moment and run it again            |
+| Charts are almost empty                          | Set `\set seed_count 2000` in `seed/seed_history.sql`, then rebuild and seed again            |
+| A change in `sql/` has no effect                 | The `sql/` scripts only run on an empty database: rebuild from zero (section 2)               |
+| The connector is not RUNNING                     | `docker compose logs connect`; after a partial reset, rebuild Postgres and Kafka **together** |
